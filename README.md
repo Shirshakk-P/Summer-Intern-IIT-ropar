@@ -10,9 +10,10 @@ File Heirarchy:
                     
                     
                     
-                    
-                    
-        submission (FOLDER) -> My submission for the Selection Task.
+                   
+        DQN (FOLDER) -> Deep Q-Network codes.   
+        SARSA (FOLDER) -> SARSA Algorithm codes. 
+        submission (FOLDER) -> My submission for the selection task.
                     
                     
 
@@ -23,6 +24,8 @@ ENVIRONMENT:
 
           python-3
           frozenGRID (5x5)
+          GPU Support
+          cuda-10
 
 REWARDS (Value Iteration Algorithm):
 
