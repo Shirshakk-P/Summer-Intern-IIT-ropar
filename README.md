@@ -4,7 +4,8 @@ This Repository contains all the codes that were used in Reinforcement Learning 
 
 File Heirarchy:
 
-        
+        DQN.ipynb -> Deep Q-Network algorithm
+        QLearning.ipynb -> Q Learning algorithm
         value-iteration.py -> Value Iteration algorithm used in the submission task (python file).
         value-iteration.ipynb -> Value Iteration algorithm used in the submission task (notebook file).
                     
