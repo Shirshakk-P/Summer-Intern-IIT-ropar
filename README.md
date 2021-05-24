@@ -5,12 +5,16 @@ This Repository contains all the codes that were used in Reinforcement Learning 
 File Heirarchy:
 
         DQN.ipynb -> Deep Q-Network algorithm
+        DQN.py -> Deep Q-Network algorithm code
+        SARSA.ipynb -> SARSA algorithm
+        SARSA.py -> SARSA algorithm code
         QLearning.ipynb -> Q Learning algorithm
-        value-iteration.py -> Value Iteration algorithm used in the submission task (python file).
-        value-iteration.ipynb -> Value Iteration algorithm used in the submission task (notebook file).
+        QLearning.py -> Q Learning algorithm code
+        value-iteration.py -> Value Iteration algorithm used in the submission task.
+        value-iteration.ipynb -> Value Iteration algorithm used in the submission task.
                     
                    
-        2nd year Students assignment.pdf -> Selection Task questions
+        assignment.pdf -> Selection Task questions
         Shirshakk_P-submission.pdf -> Report for the selection task.
         TASK-1.pdf -> Usage of the Value Iteration algorithm and the Policy-Iteration algorithm.            
         TASK-2.pdf -> Usage of the Q-Learning and SARSA algorithm. 
