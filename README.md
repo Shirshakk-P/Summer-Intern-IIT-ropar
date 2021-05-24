@@ -24,9 +24,19 @@ ENVIRONMENT:
 
           python-3
           frozenGRID (5x5)
+
+REWARDS (Value Iteration Algorithm):
+
+          1. Reward in each state is +1 except the terminal states.
+          2. The probability of all directions (N, S, W, E) = (0.2, 0.3, 0.25, 0.25).
+      
+ 
+REINFORCEMENT LEARNING ALGORITHMS:
+  
+          SARSA
+          Q-LEARNING
+          DEEP Q-NETWORK
           
-
-
 
 Author:
 
