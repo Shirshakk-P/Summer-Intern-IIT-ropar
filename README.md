@@ -16,14 +16,7 @@ File Heirarchy:
         TASK-3.pdf -> Usage of the Deep Q-Network algorithm.
         
                 
-                Folders:
-        DQN (FOLDER) -> Deep Q-Network codes.   
-        SARSA (FOLDER) -> SARSA Algorithm codes. 
-        submission (FOLDER) -> My submission for the selection task.
-                    
-                    
-
-
+      
 
 
 ENVIRONMENT:
