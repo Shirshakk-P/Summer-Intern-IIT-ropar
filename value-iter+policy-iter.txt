@@ -1,0 +1,5980 @@
+﻿ASSIGNMENT- SECOND YEAR STUDENTS
+--SHIRSHAKK PURKAYASTHA
+I.I.S.E.R. Bhopal
+
+TASK-1
+VALUE-ITERATION ALGORITHM + POLICY-ITERATION ALGORITHM
+
+CODE(with outputs):
+
+import numpy as np
+import tensorflow as tf
+import matplotlib.pyplot as plt
+from IPython.display import clear_output
+from random import randint, random
+from time import sleep
+
+A_P=int(input("Enter agent Postion to start with:"))
+def print_board(agent_position):
+    fields = list(range(25))
+    board = "----------------------\n"
+    for i in range(0,25,5):
+        line = fields[i:i+5]
+        for field in line:
+            if field == agent_position:
+                board += "| A "
+            elif field == fields[0] or field == fields[-11]:
+                board += "| X "
+            elif field == fields[-4] or field == fields[-1]:
+                board += "| X "              
+            else:
+                board += "|   "
+        board += "|\n"
+        board += "----------------------\n"     
+    print(board)
+if A_P in range(0,14):
+  print_board(A_P)
+elif A_P in range(14,20):
+  print_board(A_P+1)
+elif A_P in range(20,22): 
+  print_board(A_P+2) 
+
+OUTPUT:
+Enter agent Postion to start with:21
+----------------------
+| X |   |   |   |   |
+----------------------
+|   |   |   |   |   |
+----------------------
+|   |   |   |   | X |
+----------------------
+|   |   |   |   |   |
+----------------------
+|   | X |   | A | X |
+----------------------------------------
+def create_state_to_state_prime_verbose_map():
+    l = list(range(25))
+    state_to_state_prime = {}
+    for i in l:
+        if i == 0 or i == 24:
+            state_to_state_prime[i] = {'N': 0, 'E': 0, 'S': 0, 'W': 0}
+        elif i % 5 == 0:
+            state_to_state_prime[i] = {'N': i - 5 if i - 5 in l else i, 'E': i + 1 if i + 1  in l else i, 'S': i + 5 if i + 5 in l else i, 'W': i}
+        elif i % 5 == 4:
+            state_to_state_prime[i] = {'N': i - 5 if i - 5 in l else i, 'E': i, 'S': i + 5 if i + 5 in l else i, 'W': i - 1 if i - 1 in l else i}
+        else:
+            state_to_state_prime[i] = {'N': i - 5 if i - 5 in l else i, 'E': i + 1 if i + 1  in l else i, 'S': i + 5 if i + 5 in l else i, 'W': i - 1 if i - 1 in l else i}
+
+    return state_to_state_prime
+b=float(input("Enter the value of b: "))
+a = 1-b-0.5
+float(a)
+print("a= 1-b-0.5= ",a)
+def create_random_policy():
+    return {i: {'N': 0.0, 'E': 0.0, 'S': 0.0, 'W': 0.0} if i == 0 or i == 24 else {'N': 0.2, 'E': b, 'S': 0.3, 'W': a} for                                 i in range(25)} # [N, E, S, W]
+OUTPUT:
+Enter the value of b: 0.25
+a= 1-b-0.5=  0.25
+def create_probability_map():
+    states = list(range(25))
+    state_to_state_prime = create_state_to_state_prime_verbose_map()    
+    probability_map = {}
+    for state in states:
+        for move in ["N", "E", "S", "W"]:
+            for prime in states:
+                probability_map[(prime, -1, state, move)] = 0  if prime != state_to_state_prime[state][move] else 1            
+    return probability_map
+def agent(policy, starting_position=None, verbose=False):
+    l = list(range(25))
+    state_to_state_prime = create_state_to_state_prime_verbose_map()
+    agent_position = randint(1, 22) if starting_position is None else starting_position        
+    step_number = 1
+    action_taken = None
+    if verbose:
+        print("Move: {} Position: {} Action: {}".format(step_number, agent_position, action_taken))
+        print_board(agent_position)
+        print("\n")
+        sleep(2)
+    
+    while not (agent_position == 0 or agent_position == 14 or agent_position == 21  or agent_position == 24):
+        if verbose:
+            clear_output(wait=True)
+            print("Move: {} Position: {} Action: {}".format(step_number, agent_position, action_taken))
+            print_board(agent_position)
+            print("\n")
+            sleep(1)
+        
+        current_policy = policy[agent_position]
+        next_move = random()
+        lower_bound = 0
+        for action, chance in current_policy.items():
+            if chance == 0:
+                continue
+            if lower_bound <= next_move < lower_bound + chance:
+                agent_position = state_to_state_prime[agent_position][action]
+                action_taken = action
+                break 
+            lower_bound = lower_bound + chance
+                
+        step_number += 1   
+                
+    if verbose:
+        clear_output(wait=True)
+        print("Move: {} Position: {} Action: {}".format(step_number, agent_position, action_taken))
+        print_board(agent_position)
+        print("Terminal State>>>>Win")
+        print("Step number:")    
+    return step_number
+data = []
+for i in range(100):
+    clear_output(wait=True)
+    print("{}%\n".format((i + 1) / 10))
+    data.append(agent(create_random_policy()))    
+print("Average steps to finish: {}".format(sum(data)/len(data)))
+OUTPUT:
+10.0%
+
+Average steps to finish: 9.94
+agent(create_random_policy(), verbose=True)
+OUTPUT:
+Move: 13 Position: 21 Action: S
+----------------------
+| X |   |   |   |   |
+----------------------
+|   |   |   |   |   |
+----------------------
+|   |   |   |   | X |
+----------------------
+|   |   |   |   |   |
+----------------------
+|   | A |   |   | X |
+----------------------
+
+Terminal State>>>>Win
+Step number:
+13
+
+def create_greedy_policy(V_s):
+    s_to_sprime = create_state_to_state_prime_verbose_map()
+    policy = {}
+        
+    for state in range(25):
+        
+        state_values = {a: V_s[s_to_sprime[state][a]] for a in ['N', 'S', 'E', 'W']}
+        
+        if state == 0 or state == 14 or state== 21 or state==24:
+            policy[state] = {'N': 0.0, 'E': 0.0, 'S': 0.0, 'W': 0.0} #Terminal State>>NO movement req.
+
+        else:
+            max_actions = [k for k, v in state_values.items() if v == max(state_values.values())]
+            policy[state] = {a: 1 / len(max_actions) if a in max_actions else 0.0 for a in ['N', 'S', 'E', 'W']}
+    return policy
+def iterative_policy_evaluation(policy, theta=0.01, discount_rate=0.5):
+    V_s = {i: 0 for i in range(25)} 
+    probablitiy_map = create_probability_map() 
+
+    delta = 100 
+    while not delta < theta: 
+        delta = 0 
+        for state in range(25): 
+            v = V_s[state] 
+            
+            total = 0 
+            for action in ["N", "E", "S", "W"]:
+                action_total = 0
+                for state_prime in range(25):
+                    action_total += probablitiy_map[(state_prime, -1, state, action)] * (-1 + discount_rate * V_s[state_prime])
+                total += policy[state][action] * action_total   
+                
+            V_s[state] = round(total, 1) 
+            delta = max(delta, abs(v - V_s[state])) 
+    return V_s 
+print("Random Policy-Value Iteration Algorithm:")
+policy = create_random_policy()
+V_s = iterative_policy_evaluation(policy)
+print(V_s)
+
+print("\nPolicy Iteration Algorithm:")
+V_s = iterative_policy_evaluation(policy)
+policy = create_greedy_policy(V_s)
+print(V_s)
+OUTPUT:
+Random Policy-Value Iteration Algorithm:
+{0: 0.0, 1: -1.7, 2: -1.9, 3: -1.9, 4: -1.9, 5: -1.7, 6: -1.9, 7: -1.9, 8: -1.9, 9: -1.9, 10: -1.9, 11: -1.9, 12: -1.9, 13: -1.9, 14: -1.9, 15: -1.9, 16: -1.9, 17: -1.9, 18: -1.9, 19: -1.6, 20: -1.9, 21: -1.9, 22: -1.9, 23: -1.7, 24: 0.0}
+
+Policy Iteration Algorithm:
+{0: 0.0, 1: -1.7, 2: -1.9, 3: -1.9, 4: -1.9, 5: -1.7, 6: -1.9, 7: -1.9, 8: -1.9, 9: -1.9, 10: -1.9, 11: -1.9, 12: -1.9, 13: -1.9, 14: -1.9, 15: -1.9, 16: -1.9, 17: -1.9, 18: -1.9, 19: -1.6, 20: -1.9, 21: -1.9, 22: -1.9, 23: -1.7, 24: 0.0}
+
+data = []
+for i in range(100):
+    clear_output(wait=True)
+    print("{}%\n".format((i + 1) / 10))
+    data.append(agent(policy))    
+print("Average steps to finish: {}".format(sum(data)/len(data)))
+OUTPUT:
+0.2%
+agent(policy, verbose=True)
+OUTPUT:
+Move: 1 Position: 6 Action: None
+----------------------
+| X |   |   |   |   |
+----------------------
+|   | A |   |   |   |
+----------------------
+|   |   |   |   | X |
+----------------------
+|   |   |   |   |   |
+----------------------
+|   | X |   |   | X |
+----------------------
+
+create_state_to_state_prime_verbose_map()
+OUTPUT:
+{0: {'E': 0, 'N': 0, 'S': 0, 'W': 0},
+ 1: {'E': 2, 'N': 1, 'S': 6, 'W': 0},
+ 2: {'E': 3, 'N': 2, 'S': 7, 'W': 1},
+ 3: {'E': 4, 'N': 3, 'S': 8, 'W': 2},
+ 4: {'E': 4, 'N': 4, 'S': 9, 'W': 3},
+ 5: {'E': 6, 'N': 0, 'S': 10, 'W': 5},
+ 6: {'E': 7, 'N': 1, 'S': 11, 'W': 5},
+ 7: {'E': 8, 'N': 2, 'S': 12, 'W': 6},
+ 8: {'E': 9, 'N': 3, 'S': 13, 'W': 7},
+ 9: {'E': 9, 'N': 4, 'S': 14, 'W': 8},
+ 10: {'E': 11, 'N': 5, 'S': 15, 'W': 10},
+ 11: {'E': 12, 'N': 6, 'S': 16, 'W': 10},
+ 12: {'E': 13, 'N': 7, 'S': 17, 'W': 11},
+ 13: {'E': 14, 'N': 8, 'S': 18, 'W': 12},
+ 14: {'E': 14, 'N': 9, 'S': 19, 'W': 13},
+ 15: {'E': 16, 'N': 10, 'S': 20, 'W': 15},
+ 16: {'E': 17, 'N': 11, 'S': 21, 'W': 15},
+ 17: {'E': 18, 'N': 12, 'S': 22, 'W': 16},
+ 18: {'E': 19, 'N': 13, 'S': 23, 'W': 17},
+ 19: {'E': 19, 'N': 14, 'S': 24, 'W': 18},
+ 20: {'E': 21, 'N': 15, 'S': 20, 'W': 20},
+ 21: {'E': 22, 'N': 16, 'S': 21, 'W': 20},
+ 22: {'E': 23, 'N': 17, 'S': 22, 'W': 21},
+ 23: {'E': 24, 'N': 18, 'S': 23, 'W': 22},
+ 24: {'E': 0, 'N': 0, 'S': 0, 'W': 0}}
+create_random_policy()
+OUTPUT:
+{0: {'E': 0.0, 'N': 0.0, 'S': 0.0, 'W': 0.0},
+ 1: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 2: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 3: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 4: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 5: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 6: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 7: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 8: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 9: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 10: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 11: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 12: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 13: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 14: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 15: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 16: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 17: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 18: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 19: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 20: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 21: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 22: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 23: {'E': 0.25, 'N': 0.2, 'S': 0.3, 'W': 0.25},
+ 24: {'E': 0.0, 'N': 0.0, 'S': 0.0, 'W': 0.0}}
+
+
+
+
+
+
+	QUESTION 3/4: Calculate the optimal policy by implementing the value iteration algorithm. Discuss the impact of change in a and b on policy.
+
+ANSWER: With an increase in the value of b(which means a decrease in the value of a); we see that the average steps taken decreases, i.e. the model takes lesser time to reach the closest terminal state.
+
+
+	QUESTION 5:
+Conceptual Question:
+Difference between Value-Iteration Algorithm and Policy-Iteration Algorithm
+POLICY ITERATION ALGORITHM:
+•	This algorithm manipulates the given random policy, instead of finding the optimal policy using the Optimal Value Function. Starting with the random policy, we find the value function of the given policy and then keep on finding a new optimised policy based on the previous value.
+•	Optimal Policy from given random Policy.
+
+VALUE ITERATION ALGORTIHM:
+•	This algorithm manipulates the given random value function and then iterate over and over until we find a new, better optimal Value Function. We find the optimal Policy from the optimal Value Function. 
+•	Optimal Policy from the Optimal Value Function.
+
+********************
+TASK-2
+TEMPORAL DIFFERENCE LEARNING -ALGORITHM
+
+Q-Learning CODE(with outputs):
+import gym
+import numpy as np
+
+from gym.envs.registration import register
+register(
+    id='Deterministic-4x4-FrozenLake-v0', #new environment
+    entry_point='gym.envs.toy_text.frozen_lake:FrozenLakeEnv', 
+    kwargs={'map_name': '4x4', 'is_slippery': False} # argument passed to the env
+)
+env = gym.make('Deterministic-4x4-FrozenLake-v0')
+my_desk = [
+    "GFFFF",
+    "FFFFF",
+    "FFFFG",
+    "FFFFF",
+    "FGFFG"
+]
+ 
+
+import gym
+
+class CustomizedFrozenLake(gym.envs.toy_text.frozen_lake.FrozenLakeEnv):
+    def __init__(self, **kwargs):
+        super(CustomizedFrozenLake, self).__init__(**kwargs)
+
+        for state in range(self.nS): # for all states
+            for action in range(self.nA): # for all actions
+                my_transitions = []
+                for (prob, next_state, _, is_terminal) in self.P[state][action]:
+                    row = next_state // self.ncol
+                    col = next_state - row * self.ncol
+                    tile_type = self.desc[row, col]
+                    if tile_type == b'F':
+                        reward = -1
+                    elif tile_type == b'G':
+                        reward = 10
+                    #else:
+                        #reward = 0
+
+                    my_transitions.append((prob, next_state, reward, is_terminal))
+                self.P[state][action] = my_transitions
+
+from gym.envs.registration import register
+
+register(
+    id='Stochastic-5x5-FrozenLake-v0',
+    entry_point='gym.envs.toy_text.frozen_lake:FrozenLakeEnv',
+    kwargs={'desc': my_desk, 'is_slippery': False})
+env = gym.make('Stochastic-5x5-FrozenLake-v0')
+env.render()
+OUTPUT:
+GFFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+env.reset()
+env.render()
+
+print("Action Space {}".format(env.action_space))
+print("State Space {}".format(env.observation_space))
+OUTPUT:
+
+GFFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+Action Space Discrete(4)
+State Space Discrete(25)
+
+"""ACTIONS DEFINED VIA:
+    0 = SOUTH
+    1 = NORTH
+    2 = EAST
+    3 = WEST
+"""
+
+state=env.s 
+if state in range (0,14):
+  print("State:", state)
+elif state in range (14,20):
+  print("State:", state+1)  
+elif state in range (20,22):
+  print("State:", state+2)
+
+env.render()
+State: 0
+OUTPUT:
+GFFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+env.P[state][1]
+OUTPUT:
+[(1.0, 0, 0, True)]
+m=int(input("Enter State numnber for start:"))
+
+if m in range (0,14):
+  env.s = m 
+elif m in range (14,20):
+  env.s = m+1
+elif m in range (20,22):
+  env.s = m+2
+ # set environment to illustration's state
+env.render()
+
+print("....................Learning Starts........................")
+
+epochs = 0
+penalties, reward = 0, 0
+
+frames = [] # for animation
+
+done = False
+
+while not done:
+    action = env.action_space.sample()
+    state, reward, done, info = env.step(action)
+
+    if reward == -1:
+        penalties += 1
+    
+    # Put each rendered frame into dict for animation
+    frames.append({
+        'frame' : env.render(mode='human'),
+        'state': state,
+        'action': action,
+        'reward': reward
+        }
+    )
+
+    epochs += 1
+    
+    
+print("Timesteps taken: {}".format(epochs))
+print("Penalties incurred: {}".format(penalties))
+print("\n")
+print(frames)
+OUTPUT:
+Enter State numnber for start:14
+
+GFFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+....................Learning Starts........................
+  (Down)
+GFFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GFFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+Timesteps taken: 2
+Penalties incurred: 0
+
+
+[{'frame': None, 'state': 20, 'action': 1, 'reward': 0.0}, {'frame': None, 'state': 21, 'action': 2, 'reward': 1.0}]
+from IPython.display import clear_output
+from time import sleep
+def print_frames(frames):
+    for i, frame in enumerate(frames):
+        clear_output(wait=True)
+        print("frame: ",frame)
+        print(f"Timestep: {i + 1}")
+        #print(f"State: {frame['state']}")
+        print(f"Action: {frame['action']}")
+        print(f"Reward: {frame['reward']}")
+        sleep(.1)
+        
+print_frames(frames)
+OUTPUT:
+frame:  {'frame': None, 'state': 24, 'action': 2, 'reward': 1.0}
+Timestep: 1
+Action: 2
+Reward: 1.0
+"""QLearning"""
+import numpy as np
+q_table = np.zeros([env.observation_space.n, env.action_space.n])
+print(q_table)
+OUTPUT:
+[[0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]
+ [0. 0. 0. 0.]]
+%%time
+#Training the Agent
+
+import random
+from IPython.display import clear_output
+
+# Hyperparameters
+alpha = 0.1
+gamma = 0.6
+epsilon = 0.1
+
+# For plotting metrics
+all_epochs = []
+all_penalties = []
+
+for i in range(1, 10001):
+    state = env.reset()
+
+    epochs, penalties, reward, = 0, 0, 0
+    done = False
+    
+    while not done:
+        if random.uniform(0, 1) < epsilon:
+            action = env.action_space.sample() # Explore action space
+        else:
+            action = np.argmax(q_table[state]) # Exploit learned values
+
+        next_state, reward, done, info = env.step(action) 
+        
+        old_value = q_table[state, action]
+        next_max = np.max(q_table[next_state])
+        
+        new_value = (1 - alpha) * old_value + alpha * (reward + gamma * next_max)
+        q_table[state, action] = new_value
+
+        if reward == -1:
+            penalties += 1
+
+        state = next_state
+        epochs += 1
+        
+    if i % 100 == 0:
+        clear_output(wait=True)
+        print(f"Episode: {i}")
+
+print("Training finished.\n")
+OUTPUT:
+Episode: 100000
+Training finished.
+
+CPU times: user 7.5 s, sys: 2.33 s, total: 9.83 s
+Wall time: 9.18 s
+m=int(input(print("Enter state value:")))
+
+for m in range (0,14):
+  print(q_table[m])
+for m in range (14,20):
+  print(q_table[(m+1)])
+for m in range (20,22):
+  print(q_table[(m+2)])
+OUTPUT:
+Enter state value:
+20
+[0. 0. 0. 0.]
+[1.   0.36 0.36 0.6 ]
+[0.6        0.21599983 0.21599977 0.35999992]
+[0.35999997 0.03954002 0.01053266 0.0582606 ]
+[0.08836117 0.         0.         0.        ]
+[0.59999976 0.35999989 0.35999997 1.        ]
+[0.6        0.2159974  0.21599977 0.59999917]
+[0.36       0.02348849 0.02607496 0.0684    ]
+[0.16088968 0.         0.         0.        ]
+[0. 0. 0. 0.]
+[0.26911731 0.09340281 0.10309805 0.6       ]
+[0.35999985 0.00175724 0.02009013 0.036     ]
+[0.15117515 0.         0.         0.        ]
+[0.00815816 0.         0.         0.        ]
+[0.01549376 0.         0.         0.29322828]
+[0.03047873 0.         0.         0.        ]
+[0. 0. 0. 0.]
+[0. 0. 0. 0.]
+[0. 0. 0. 0.]
+[0. 0. 0. 0.]
+[0. 0. 0. 0.]
+[0. 0. 0. 0.]
+'q_table[20]\n'
+q_table[20] #Checking Qvalue for any random state
+OUTPUT:
+array([0., 0., 0., 0.])
+"""Evaluating Agent's performance after Q-learning"""
+
+total_epochs, total_penalties = 0, 0
+episodes = 520148
+
+for _ in range(episodes):
+    state = env.reset()
+    epochs, penalties, reward = 0, 0, 0
+    
+    done = False
+    
+    while not done:
+        action = np.argmax(q_table[state])
+        state, reward, done, info = env.step(action)
+
+        if reward == -1:
+            penalties += 1
+
+        epochs += 1
+
+    total_penalties += penalties
+    total_epochs += epochs
+
+print(f"Results after {episodes} episodes:")
+print(f"Average timesteps per episode: {total_epochs / episodes}")
+print(f"Average penalties per episode: {total_penalties / episodes}")
+OUTPUT:
+Results after 520148 episodes:
+Average timesteps per episode: 1.0
+Average penalties per episode: 0.0
+
+
+***************
+
+
+
+
+SARSA CODE(with outputs):
+import gym
+import numpy as np
+from gym.envs.registration import register
+register(
+    id='Deterministic-4x4-FrozenLake-v0', # name given to this new environment
+    entry_point='gym.envs.toy_text.frozen_lake:FrozenLakeEnv', # env entry point
+    kwargs={'map_name': '4x4', 'is_slippery': False} # argument passed to the env
+)
+"""We specify the start state at 1..
+This can be reconfiguired as per our requirements """
+env = gym.make('Deterministic-4x4-FrozenLake-v0') # load the environment
+my_desk = [
+    "GSFFF",
+    "FFFFF",
+    "FFFFG",
+    "FFFFF",
+    "FGFFG"
+]
+import gym
+class CustomizedFrozenLake(gym.envs.toy_text.frozen_lake.FrozenLakeEnv):
+    def __init__(self, **kwargs):
+        super(CustomizedFrozenLake, self).__init__(**kwargs)
+
+        for state in range(self.nS): # for all states
+            for action in range(self.nA): # for all actions
+                my_transitions = []
+                for (prob, next_state, _, is_terminal) in self.P[state][action]:
+                    row = next_state // self.ncol
+                    col = next_state - row * self.ncol
+                    tile_type = self.desc[row, col]
+                    if tile_type == b'F':
+                        reward = -1
+                    elif tile_type == b'G':
+                        reward = 10
+                    else: 
+                        reward = 0
+                        
+
+                    my_transitions.append((prob, next_state, reward, is_terminal))
+                self.P[state][action] = my_transitions
+
+from gym.envs.registration import register
+
+register(
+    id='Stochastic-5x5-FrozenLake-v0',
+    entry_point='gym.envs.toy_text.frozen_lake:FrozenLakeEnv',
+    kwargs={'desc': my_desk, 'is_slippery': False})
+env = gym.make('Stochastic-5x5-FrozenLake-v0')
+env.render()
+print(env.action_space.n)
+print(env.observation_space.n)
+OUTPUT:
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+4
+25
+#Parameters
+epsilon = 0.9
+total_episodes = 5500
+max_steps = 100
+alpha = 0.70
+gamma = 0.75
+#Initializing the Q-matrix 
+Q = np.zeros((env.observation_space.n, env.action_space.n)) 
+#print(Q)
+
+#Function to choose the next action 
+def choose_action(state): 
+  action=0
+  if np.random.uniform(0, 1) < epsilon: 
+    action = env.action_space.sample() 
+  else: 
+    action = np.argmax(Q[state, :]) 
+  return action 
+
+#Function to learn the Q-value 
+def update(state, state2, reward, action, action2): 
+  predict = Q[state, action] 
+  target = reward + gamma * Q[state2, action2] 
+  Q[state, action] = Q[state, action] + alpha * (target - predict) 
+  
+#print(Q)
+#Initializing the reward 
+reward=0
+
+# Starting the SARSA learning 
+for episode in range(total_episodes): 
+  t = 0
+  state1 = env.reset() 
+  action1 = choose_action(state1) 
+
+  while t < max_steps: 
+    #Visualizing the training 
+    env.render() 
+    
+    #Getting the next state 
+    state2, reward, done, info = env.step(action1) 
+
+    #Choosing the next action 
+    action2 = choose_action(state2) 
+    
+    #Learning the Q-value 
+    update(state1, state2, reward, action1, action2) 
+
+    state1 = state2 
+    action1 = action2 
+    
+    #Updating the respective vaLues 
+    t += 1
+    reward += -1
+    
+    #If at the end of learning process 
+    if done: 
+      break 
+OUTPUT:
+Streaming output truncated to the last 5000 lines.
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Down)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Right)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Up)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+  (Left)
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+GSFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+
+#Evaluating the performance 
+print ("Performace : ", reward/total_episodes) 
+#Visualizing the Q-matrix 
+print(Q) 
+"A positive performance is highly acceptable, given that with every step a penalty of -1 is incured"
+OUTPUT:
+Performace :  0.0
+[[0.         0.         0.         0.        ]
+ [1.         0.13274721 0.07648872 0.56953974]
+ [0.54072524 0.12122495 0.15814572 0.0489783 ]
+ [0.07776374 0.19327976 0.4114731  0.30618066]
+ [0.08640925 0.3275145  0.17826196 0.08731207]
+ [0.39577389 0.11300707 0.09764022 1.        ]
+ [0.12497262 0.36135288 0.09676008 0.19409453]
+ [0.13187797 0.08586729 0.36476933 0.07487011]
+ [0.10040456 0.70236679 0.74703373 0.09673464]
+ [0.2501247  1.         0.69773896 0.11994224]
+ [0.13446335 0.20802134 0.18088891 0.56541349]
+ [0.23756802 0.2693264  0.06477107 0.20374487]
+ [0.05947002 0.08085113 0.08264882 0.12529833]
+ [0.07471843 0.37871433 1.         0.41217226]
+ [0.         0.         0.         0.        ]
+ [0.42556701 0.63598816 0.59889383 0.32766487]
+ [0.24501957 1.         0.30190637 0.11578603]
+ [0.10318084 0.21278995 0.15782044 0.09638   ]
+ [0.36341704 0.58674952 0.70785036 0.2871282 ]
+ [0.13864157 1.         0.605381   1.        ]
+ [0.58651346 0.49714581 1.         0.44345222]
+ [0.         0.         0.         0.        ]
+ [1.         0.28576564 0.3188376  0.09962918]
+ [0.58024371 0.26075519 1.         0.41009241]
+ [0.         0.         0.         0.        ]]
+
+
+	QUESTION:
+Conceptual Question:
+Difference between On-Policy and Off-Policy:
+On-Policy TD Control Algorithm: SARSA (State-Action-Reward-State-Action)
+•	In SARSA, the agent learns the optimal policy and behaves also per the same greedy policy.
+•	Update policy is same as the Behaviour Policy.
+
+Off-Policy TD Control Algorithm: Q-Learning
+•	IN Q-Learning, the agent learns the optimal policy using the absolute Greedy Policy but behaves according to other greedy policies.
+•	Update Policy is different than the Behaviour Policy.
+
+
+******************
+TASK-3
+NOTE: "I am facing troubles in converting the dictionary of state movements described in the gym environment library by the (action_size)."
+"The problem lies with converting the discrete datatype of action_size into integer."
+
+DEEP Q-NETWORK
+
+DEEP Q NETWORK CODE(with outputs):
+import gym
+import numpy as np
+"This code has to be rerun in another session as gym library does not allow registering any custom environment twice"
+from gym.envs.registration import register
+register(
+    id='Deterministic-4x4-FrozenLake-v0', # name given to this new environment
+    entry_point='gym.envs.toy_text.frozen_lake:FrozenLakeEnv', # env entry point
+    kwargs={'map_name': '4x4', 'is_slippery': False} # argument passed to the env
+)
+env = gym.make('Deterministic-4x4-FrozenLake-v0') # load the environment
+my_desk = [
+    "GFFFF",
+    "FFFFF",
+    "FFFFG",
+    "FFFFF",
+    "FGFFG"
+]
+ import gym
+
+class CustomizedFrozenLake(gym.envs.toy_text.frozen_lake.FrozenLakeEnv):
+    def __init__(self, **kwargs):
+        super(CustomizedFrozenLake, self).__init__(**kwargs)
+
+        for state in range(self.nS): # for all states
+            for action in range(self.nA): # for all actions
+                my_transitions = []
+                for (prob, next_state, _, is_terminal) in self.P[state][action]:
+                    row = next_state // self.ncol
+                    col = next_state - row * self.ncol
+                    tile_type = self.desc[row, col]
+                    if tile_type == b'F':
+                        reward = -1
+                    elif tile_type == b'G':
+                        reward = 10
+                    #else:
+                        #reward = 0
+
+                    my_transitions.append((prob, next_state, reward, is_terminal))
+                self.P[state][action] = my_transitions
+
+from gym.envs.registration import register
+
+register(
+    id='Stochastic-5x5-FrozenLake-v0',
+    entry_point='gym.envs.toy_text.frozen_lake:FrozenLakeEnv',
+    kwargs={'desc': my_desk, 'is_slippery': False})
+env = gym.make('Stochastic-5x5-FrozenLake-v0')
+env.render()
+OUTPUT:
+
+GFFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+/usr/local/lib/python3.6/dist-packages/gym/envs/toy_text/frozen_lake.py:112: RuntimeWarning: invalid value encountered in true_divide
+  isd /= isd.sum()
+/usr/local/lib/python3.6/dist-packages/gym/envs/toy_text/discrete.py:13: RuntimeWarning: invalid value encountered in greater
+  return (csprob_n > np_random.rand()).argmax()
+env.reset()
+env.render()
+
+print("Action Space {}".format(env.action_space))
+print("State Space {}".format(env.observation_space))
+OUTPUT:
+GFFFF
+FFFFF
+FFFFG
+FFFFF
+FGFFG
+Action Space Discrete(4)
+State Space Discrete(25)
+/usr/local/lib/python3.6/dist-packages/gym/envs/toy_text/discrete.py:13: RuntimeWarning: invalid value encountered in greater
+  return (csprob_n > np_random.rand()).argmax()
+from keras.models import Sequential
+from keras.layers import Dense, Activation, Flatten, Embedding, Reshape
+from keras.optimizers import Adam
+OUTPUT:Using TensorFlow backend.
+env.reset()
+env.step(env.action_space.sample())[0]
+action_size = env.action_space
+print(action_size)
+state_size = env.observation_space
+print(state_size)
+print(type(action_size))
+OUTPUT:
+Discrete(4)
+Discrete(25)
+<class 'gym.spaces.discrete.Discrete'>/usr/local/lib/python3.6/dist-packages/gym/envs/toy_text/discrete.py:13: RuntimeWarning: invalid value encountered in greater
+  return (csprob_n > np_random.rand()).argmax()
+"I am facing troubles in converting the dictionary of state movements described in the gym environment library by the (action_size)"
+"The problem lies with converting the discrete datatype of action_size into integer"
+"HIDDEN LAYER 1"
+model=Sequential()
+model.add(Embedding(500,4, input_length=1))
+model.add(Dense(50, activation='relu'))
+model.add(Dense(50, activation='relu'))
+model.add(Dense(50, activation='relu'))
+print(model.summary())
+model.add(Dense(n, activation='linear'))
+"HIDDEN LAYER 2"
+model = Sequential()
+model.add(Embedding(500, 4, input_length=1))
+model.add(Reshape((4,)))
+model.add(Dense(50, activation='relu'))
+model.add(Dense(50, activation='relu'))
+model.add(Dense(50, activation='relu'))
+model.add(Dense(action_size, activation='relu'))
+print(model.summary())
+OUTPUT:
+Model: "sequential_2"
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+embedding_2 (Embedding)      (None, 1, 6)              3000      
+_________________________________________________________________
+reshape_2 (Reshape)          (None, 6)                 0         
+_________________________________________________________________
+dense_1 (Dense)              (None, 50)                350       
+_________________________________________________________________
+dense_2 (Dense)              (None, 50)                2550      
+_________________________________________________________________
+dense_3 (Dense)              (None, 50)                2550      
+=================================================================
+Total params: 8,450
+Trainable params: 8,450
+Non-trainable params: 0
+_________________________________________________________________
+None
+!pip install tensorflow==2.0.0-beta1
+#print(tf.__version__)
+import tensorflow as tf
+from rl.agents.dqn import DQNAgent
+from rl.policy import EpsGreedyQPolicy
+from rl.memory import SequentialMemory
+
+memory = SequentialMemory(limit=50000, window_length=1)
+policy = EpsGreedyQPolicy()
+dqn = DQNAgent(model=model, nb_actions=action_size, memory=memory, nb_steps_warmup=500, target_model_update=1e-2, policy=policy)
+dqn.compile(Adam(lr=1e-3), metrics=['mae'])
+dqn.fit(env, nb_steps=1000000, visualize=False, verbose=1, nb_max_episode_steps=99, log_interval=100000)
+dqn.test(env, nb_episodes=5, visualize=True, nb_max_episode_steps=99)
+dqn.save_weights('dqn_{}_weights.h5f'.format("Taxi-v2"), overwrite=True)
+#FLATTENNING THE MODEL
+model = Sequential()
+model.add(Flatten(input_shape=(1,) + env.observation_space.shape))
+model.add(Dense(16))
+model.add(Activation('relu'))
+model.add(Dense(nb_actions))
+model.add(Activation('linear'))
+print(model.summary())
+
+******************
+
+
